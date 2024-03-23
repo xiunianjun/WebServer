@@ -9,8 +9,14 @@
 
 using namespace std;
 
+// __thread 是 C/C++ 中的线程局部存储（Thread Local Storage，TLS）关键字
+// 它可以让变量在每个线程中都有独立的拷贝
 __thread EventLoop* t_loopInThisThread = 0;
 
+/* evnetfd
+eventfd 是 Linux 内核提供的一种机制，用于实现在用户空间和内核空间之间进行事件通知的文件描述符
+它允许用户空间应用程序通过文件描述符来接收和发送事件通知
+*/
 int createEventfd() {
   int evtfd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
   if (evtfd < 0) {
@@ -65,6 +71,7 @@ void EventLoop::wakeup() {
 
 void EventLoop::handleRead() {
   uint64_t one = 1;
+  // block by epoll
   ssize_t n = readn(wakeupFd_, &one, sizeof one);
   if (n != sizeof one) {
     LOG << "EventLoop::handleRead() reads " << n << " bytes instead of 8";
@@ -80,9 +87,10 @@ void EventLoop::runInLoop(Functor&& cb) {
     queueInLoop(std::move(cb));
 }
 
+// queueInLoop是跨进程调用的精髓所在，具有极大的灵活性
 void EventLoop::queueInLoop(Functor&& cb) {
   {
-    MutexLockGuard lock(mutex_);
+    MutexLockGuard lock(mutex_);  // 这里的锁由某个特定线程中的loop创建，只会被该线程和主线程竞争
     pendingFunctors_.emplace_back(std::move(cb));
   }
 

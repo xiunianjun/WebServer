@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <limits>
 
+// 6666这个长见识了
 const char digits[] = "9876543210123456789";
 const char* zero = digits + 9;
 

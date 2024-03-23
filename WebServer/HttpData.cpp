@@ -128,7 +128,7 @@ HttpData::HttpData(EventLoop *loop, int connfd)
 }
 
 void HttpData::reset() {
-  // inBuffer_.clear();
+  // inBuffer_.clear(); // 实在不大懂为什么不clear。。。
   fileName_.clear();
   path_.clear();
   nowReadPos_ = 0;
@@ -199,8 +199,9 @@ void HttpData::handleRead() {
         handleError(fd_, 400, "Bad Request");
         break;
       } else
-        state_ = STATE_PARSE_HEADERS;
+        state_ = STATE_PARSE_HEADERS; // 解析完URI，进入下一阶段
     }
+
     if (state_ == STATE_PARSE_HEADERS) {
       HeaderState flag = this->parseHeaders();
       if (flag == PARSE_HEADER_AGAIN)
@@ -213,11 +214,12 @@ void HttpData::handleRead() {
       }
       if (method_ == METHOD_POST) {
         // POST方法准备
-        state_ = STATE_RECV_BODY;
+        state_ = STATE_RECV_BODY; // POST还需要处理请求体
       } else {
         state_ = STATE_ANALYSIS;
       }
     }
+
     if (state_ == STATE_RECV_BODY) {
       int content_length = -1;
       if (headers_.find("Content-length") != headers_.end()) {
@@ -231,6 +233,7 @@ void HttpData::handleRead() {
       if (static_cast<int>(inBuffer_.size()) < content_length) break;
       state_ = STATE_ANALYSIS;
     }
+
     if (state_ == STATE_ANALYSIS) {
       AnalysisState flag = this->analysisRequest();
       if (flag == ANALYSIS_SUCCESS) {
@@ -244,6 +247,7 @@ void HttpData::handleRead() {
     }
   } while (false);
   // cout << "state_=" << state_ << endl;
+
   if (!error_) {
     if (outBuffer_.size() > 0) {
       handleWrite();
@@ -279,6 +283,7 @@ void HttpData::handleWrite() {
   }
 }
 
+// 看起来是在处理连接状态变化的情况
 void HttpData::handleConn() {
   seperateTimer();
   __uint32_t &events_ = channel_->getEvents();
@@ -482,6 +487,7 @@ HeaderState HttpData::parseHeaders() {
   return PARSE_HEADER_AGAIN;
 }
 
+// 解析请求，填充response，如图片、文字信息等
 AnalysisState HttpData::analysisRequest() {
   if (method_ == METHOD_POST) {
     // ------------------------------------------------------

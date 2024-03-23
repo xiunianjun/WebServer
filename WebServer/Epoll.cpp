@@ -28,6 +28,10 @@ Epoll::Epoll() : epollFd_(epoll_create1(EPOLL_CLOEXEC)), events_(EVENTSNUM) {
 Epoll::~Epoll() {}
 
 // 注册新描述符
+/*
+  初步认为这个东西只有在初始化的时候才调用，也就是说它可能就类似于不同的socket分别监视
+  不同的事件这样，这里是在记录哪个socket记录哪种事件，然后现在是还没有请求到来正在等待中。。。
+*/
 void Epoll::epoll_add(SP_Channel request, int timeout) {
   int fd = request->getFd();
   if (timeout > 0) {
@@ -36,7 +40,7 @@ void Epoll::epoll_add(SP_Channel request, int timeout) {
   }
   struct epoll_event event;
   event.data.fd = fd;
-  event.events = request->getEvents();
+  event.events = request->getEvents();  // EPOLLIN 等等
 
   request->EqualAndUpdateLastEvents();
 
@@ -63,6 +67,7 @@ void Epoll::epoll_mod(SP_Channel request, int timeout) {
 }
 
 // 从epoll中删除描述符
+// call in connection-close
 void Epoll::epoll_del(SP_Channel request) {
   int fd = request->getFd();
   struct epoll_event event;
@@ -78,6 +83,7 @@ void Epoll::epoll_del(SP_Channel request) {
 }
 
 // 返回活跃事件数
+// usage: 阻塞直到有活跃事件，并且返回活跃事件的channel
 std::vector<SP_Channel> Epoll::poll() {
   while (true) {
     int event_count =
@@ -95,6 +101,7 @@ std::vector<SP_Channel> Epoll::getEventsRequest(int events_num) {
   std::vector<SP_Channel> req_data;
   for (int i = 0; i < events_num; ++i) {
     // 获取有事件产生的描述符
+    // os已经帮我们重排到前面了
     int fd = events_[i].data.fd;
 
     SP_Channel cur_req = fd2chan_[fd];

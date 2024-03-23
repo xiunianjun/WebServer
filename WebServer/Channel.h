@@ -12,6 +12,11 @@
 class EventLoop;
 class HttpData;
 
+/*
+  看起来大概就是一个保存了四个callback地址的东西，可以注册和调用callback
+  感觉是一种请求的抽象？ 记录了该请求对应的socket的fd、该请求要求的epoll event以及该请求对应的
+  URI、Header、handler等等等。
+*/
 class Channel {
  private:
   typedef std::function<void()> CallBack;
@@ -56,17 +61,21 @@ class Channel {
   }
   void setConnHandler(CallBack &&connHandler) { connHandler_ = connHandler; }
 
+  // 只有传入的events监听什么事件它才会返回什么样的revents
   void handleEvents() {
     events_ = 0;
+    // 对端服务器挂起，并且数据传输结束
     if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
       events_ = 0;
       return;
     }
+    // 对端服务器有错误
     if (revents_ & EPOLLERR) {
       if (errorHandler_) errorHandler_();
       events_ = 0;
       return;
     }
+    // 事件中包含 EPOLLIN、EPOLLPRI 或 EPOLLRDHUP 中的任何一种，表示套接字上有数据可读
     if (revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
       handleRead();
     }

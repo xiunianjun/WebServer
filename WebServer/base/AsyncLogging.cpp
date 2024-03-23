@@ -59,7 +59,7 @@ void AsyncLogging::threadFunc() {
       MutexLockGuard lock(mutex_);
       if (buffers_.empty())  // unusual usage!
       {
-        cond_.waitForSeconds(flushInterval_);
+        cond_.waitForSeconds(flushInterval_); // 等待直到buffer区满
       }
       buffers_.push_back(currentBuffer_);
       currentBuffer_.reset();

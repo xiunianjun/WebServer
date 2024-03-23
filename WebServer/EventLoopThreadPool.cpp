@@ -23,9 +23,11 @@ void EventLoopThreadPool::start() {
 EventLoop *EventLoopThreadPool::getNextLoop() {
   baseLoop_->assertInLoopThread();
   assert(started_);
-  EventLoop *loop = baseLoop_;
+  EventLoop *loop = baseLoop_;  // 如果没有额外创建worker线程，就只能默认在主线程中监听+处理了
   if (!loops_.empty()) {
-    loop = loops_[next_];
+    // 一般都会进入到这里
+    // 前面 start() 创建的空loop在此即将被塞入worker任务
+    loop = loops_[next_]; // round robin
     next_ = (next_ + 1) % numThreads_;
   }
   return loop;

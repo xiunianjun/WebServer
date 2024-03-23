@@ -12,6 +12,11 @@ using namespace std;
 
 AppendFile::AppendFile(string filename) : fp_(fopen(filename.c_str(), "ae")) {
   // 用户提供缓冲区
+  /*
+    __stream：指向 FILE 结构体的指针，表示要设置缓冲区的文件流。
+    __buf：指向字符数组的指针，表示要用作缓冲区的内存地址。
+    __size：表示缓冲区的大小，以字节数为单位。
+  */
   setbuffer(fp_, buffer_, sizeof buffer_);
 }
 
